@@ -1,9 +1,10 @@
-var incidents;
-var token;
-var poller;
-var last_polled;
-var recent_log_entries = [];
-var table;
+var incidents
+var token
+var poller
+var last_polled
+var recent_log_entries = []
+var recent_log_entries_purge_timer
+var table
 
 function getParameterByName(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
@@ -97,19 +98,19 @@ function pollLogEntries() {
             }
             if (update_item.type === 'annotate_log_entry') {
                 row.notes += 1
-                row.last_log = update_item.summary
+                row.last_log = `${(new Date(update_item.created_at)).toLocaleString()}: ${update_item.summary}`
                 table.row(`#${incident.id}`).data(row).draw()
             } else if (update_item.type === 'priority_change_log_entry') {
                 row.priority = incident.priority ? incident.priority.summary : '~none~'
-                row.last_log = update_item.summary
+                row.last_log = `${(new Date(update_item.created_at)).toLocaleString()}: ${update_item.summary}`
                 table.row(`#${incident.id}`).data(row).draw()
             } else if (update_item.type === 'acknowledge_log_entry') {
                 row.status = 'acknowledged'
-                row.last_log = update_item.summary
+                row.last_log = `${(new Date(update_item.created_at)).toLocaleString()}: ${update_item.summary}`
                 table.row(`#${incident.id}`).data(row).draw()
             } else if (update_item.type === 'unacknowledge_log_entry') {
                 row.status = 'triggered'
-                row.last_log = update_item.summary
+                row.last_log = `${(new Date(update_item.created_at)).toLocaleString()}: ${update_item.summary}`
                 table.row(`#${incident.id}`).data(row).draw()
             }
         }
@@ -126,6 +127,13 @@ function pollLogEntries() {
         }
         last_polled = new Date()
     })
+}
+
+function cleanRecentLogEntries() {
+    const d = new Date()
+    const before = recent_log_entries.length
+    recent_log_entries = recent_log_entries.filter(x => d - x.date < 60*60*1000)
+    console.log(`Purged ${before - recent_log_entries.length} recent log entries (${before} -> ${recent_log_entries.length})`)
 }
 
 async function fetchIncidents(since, until) {
@@ -161,6 +169,8 @@ async function buildReport(since, until, reuseFetchedData) {
         }
         clearInterval(poller)
         poller = setInterval(pollLogEntries, 5000)
+        clearInterval(recent_log_entries_purge_timer)
+        recent_log_entries_purge_timer = setInterval(cleanRecentLogEntries, 3_600_000)
         $('.busy').hide()
     }
 
