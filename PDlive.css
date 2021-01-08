@@ -29,3 +29,19 @@ body {
 	position: fixed;
 	margin: auto;
 }
+
+.flash {
+	animation: pulse 0.3s 1;
+}
+
+@keyframes pulse {
+	0% {
+		background-color: transparent;
+	}
+	5% {
+		background-color: #2a59c0;
+	}
+	100% {
+		background-color: transparent;
+	}
+}

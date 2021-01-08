@@ -86,6 +86,7 @@ function pollLogEntries() {
                 last_log: '',
             })
             .draw()
+            flashIncidentRow(incident.id)
         }
 
         for (update_item of update_list) {
@@ -96,23 +97,18 @@ function pollLogEntries() {
                 console.log(`row not found for incident id ${incident.id}`)
                 continue
             }
+            row.last_log = `${(new Date(update_item.created_at)).toLocaleString()}: ${update_item.summary}`
             if (update_item.type === 'annotate_log_entry') {
                 row.notes += 1
-                row.last_log = `${(new Date(update_item.created_at)).toLocaleString()}: ${update_item.summary}`
-                table.row(`#${incident.id}`).data(row).draw()
             } else if (update_item.type === 'priority_change_log_entry') {
                 row.priority = incident.priority ? incident.priority.summary : '~none~'
-                row.last_log = `${(new Date(update_item.created_at)).toLocaleString()}: ${update_item.summary}`
-                table.row(`#${incident.id}`).data(row).draw()
             } else if (update_item.type === 'acknowledge_log_entry') {
                 row.status = 'acknowledged'
-                row.last_log = `${(new Date(update_item.created_at)).toLocaleString()}: ${update_item.summary}`
-                table.row(`#${incident.id}`).data(row).draw()
             } else if (update_item.type === 'unacknowledge_log_entry') {
                 row.status = 'triggered'
-                row.last_log = `${(new Date(update_item.created_at)).toLocaleString()}: ${update_item.summary}`
-                table.row(`#${incident.id}`).data(row).draw()
             }
+            table.row(`#${incident.id}`).data(row).draw()
+            flashIncidentRow(incident.id)
         }
 
         for (remove_item of remove_list) {
@@ -234,6 +230,13 @@ async function buildReport(since, until, reuseFetchedData) {
         order: [[2, 'asc']],
         pageLength: 50
     })
+}
+
+function flashIncidentRow(incident_id) {
+    $(`#${incident_id}`).addClass('flash')
+    setTimeout(() => {
+        $(`#${incident_id}`).removeClass('flash')
+    }, 300)
 }
 
 function main() {
