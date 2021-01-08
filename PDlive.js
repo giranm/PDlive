@@ -1,3 +1,4 @@
+var priorities
 var incidents
 var token
 var poller
@@ -152,8 +153,9 @@ async function buildReport(since, until, reuseFetchedData) {
         last_polled = new Date()
         const pd = PagerDuty.api({token: token, tokenType: 'bearer'})
         let r = await pd.get('/priorities')
+        priorities = r.data.priorities
         $('#priority-checkboxes-div').html('Show priorities: <div class="btn-group" id="priority-checkboxes-group"></div>')
-        for (priority of r.data.priorities) {
+        for (priority of priorities) {
             $('#priority-checkboxes-group').append($('<button/>', { class: "priority-button btn btn-primary active", value: priority.name, text: priority.name }))
         }
         $('#priority-checkboxes-group').append($('<button/>', { class: "priority-button btn btn-primary active", value: "~none~", text: "none" }))
@@ -224,7 +226,26 @@ async function buildReport(since, until, reuseFetchedData) {
             'copy', 'csv', 'pdf', 'print'
         ],
         order: [[2, 'asc']],
-        pageLength: 50
+        pageLength: 50,
+        rowCallback: (row, data, index) => {
+            if (data.status == "triggered") {
+                $("td:eq(2)", row).removeClass("status-acknowledged");
+                $("td:eq(2)", row).addClass("status-triggered");
+            } else if (data.status == "acknowledged") {
+                $("td:eq(2)", row).removeClass("status-triggered");
+                $("td:eq(2)", row).addClass("status-acknowledged");
+            } else {
+                $("td:eq(2)", row).removeClass("status-triggered");
+                $("td:eq(2)", row).removeClass("status-acknowledged");
+            }
+
+            const priority = priorities.find(x => x.summary == data.priority)
+            if (priority && priority.color) {
+                $("td:eq(3)", row).css('background-color', `#${priority.color} !important`)
+            } else if (data.priority == '~none~') {
+                $("td:eq(3)", row).css('background-color', `transparent`)
+            }
+        }
     })
 }
 

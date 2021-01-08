@@ -30,6 +30,14 @@ body {
 	margin: auto;
 }
 
+.status-triggered {
+	background-color: red !important;
+}
+
+.status-acknowledged {
+	background-color: orange !important;
+}
+
 .flash {
 	animation: pulse 0.3s 1;
 }
