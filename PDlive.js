@@ -47,13 +47,17 @@ function pollLogEntries() {
         let update_set = new Set()
         for (log_entry of log_entries) {
             if ( recent_log_entries.filter(x => x.id == log_entry.id).length > 0 ) {
-                console.log(`duplicate log entry ${log_entry.id}`)
+                // console.log(`duplicate log entry ${log_entry.id}`)
                 continue
             }
+            log_entry_date = new Date(log_entry.created_at)
             recent_log_entries.push({
-                date: new Date(log_entry.created_at),
+                date: log_entry_date,
                 id: log_entry.id
             })
+            if (log_entry_date > last_polled) {
+                last_polled = log_entry_date
+            }
             incident_id = log_entry.incident.id
             entry_type = log_entry.type
 
@@ -64,6 +68,8 @@ function pollLogEntries() {
             } else {
                 update_set.add(log_entry)
             }
+
+
         }
         const add_list = [...add_set].filter(x => !remove_set.has(x))
         const update_list = [...update_set].filter(x => !remove_set.has(x) && !add_set.has(x))
@@ -81,7 +87,6 @@ function pollLogEntries() {
                 priority: incident.priority ? incident.priority.summary : '~none~',
                 notes: 0,
                 created_at: moment(incident.created_at).format('l LTS [GMT]ZZ'),
-                // created_by: incident.first_trigger_log_entry.agent ? `<a href="${incident.first_trigger_log_entry.agent.html_url}" target="blank">${incident.first_trigger_log_entry.agent.summary}</a>` : 'unk',
                 service_name: `<a href="${incident.service.html_url}" target="blank">${incident.service.summary}</a>`,
                 last_log: '',
             })
@@ -121,14 +126,13 @@ function pollLogEntries() {
             }
             table.row(`#${incident.id}`).remove().draw()
         }
-        last_polled = new Date()
     })
 }
 
 function cleanRecentLogEntries() {
     const d = new Date()
     const before = recent_log_entries.length
-    recent_log_entries = recent_log_entries.filter(x => d - x.date < 60*60*1000)
+    recent_log_entries = recent_log_entries.sort((a, b) => b.date - a.date).slice(0, 100)
     console.log(`Purged ${before - recent_log_entries.length} recent log entries (${before} -> ${recent_log_entries.length})`)
 }
 
@@ -166,7 +170,7 @@ async function buildReport(since, until, reuseFetchedData) {
         clearInterval(poller)
         poller = setInterval(pollLogEntries, 5000)
         clearInterval(recent_log_entries_purge_timer)
-        recent_log_entries_purge_timer = setInterval(cleanRecentLogEntries, 3_600_000)
+        recent_log_entries_purge_timer = setInterval(cleanRecentLogEntries, 600_000)
         $('.busy').hide()
     }
 
@@ -196,10 +200,6 @@ async function buildReport(since, until, reuseFetchedData) {
                 priority: incident.priority.name,
                 notes: incident.notes.length,
                 created_at: moment(incident.created_at).format('l LTS [GMT]ZZ'),
-                // created_by: `<a href="${incident.first_trigger_log_entry.agent.html_url}" target="blank">${incident.first_trigger_log_entry.agent.summary}</a>`,
-                // incident.status == 'resolved' ? moment(incident.last_status_change_at).format('l LTS [GMT]ZZ') : '(in progress)',
-                // incident.status == 'resolved' ? '<a href="' + incident.last_status_change_by.html_url + '" target="blank">' + incident.last_status_change_by.summary + '</a>' : '(in progress)',
-                // incident.status == 'resolved' ? secondsToHHMMSS(moment.duration(moment(incident.last_status_change_at).diff(moment(incident.created_at))).asSeconds()) : '(in progress)',
                 service_name: `<a href="${incident.service.html_url}" target="blank">${incident.service.summary}</a>`,
                 last_log: '',
             })
@@ -212,10 +212,6 @@ async function buildReport(since, until, reuseFetchedData) {
             { title: "Priority", data: 'priority' },
             { title: "Notes", data: 'notes' },
             { title: "Created at", data: 'created_at'},
-            // { title: "Created by", data: 'created_by'},
-            // { title: "Resolved at" },
-            // { title: "Resolved by" },
-            // { title: "Duration" },
             { title: "Service Name", data: 'service_name' },
             { title: "last log entry", data: 'last_log'},
         ]
