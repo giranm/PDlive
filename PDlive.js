@@ -86,7 +86,7 @@ function pollLogEntries() {
                 title: incident.title,
                 status: incident.status,
                 priority: incident.priority ? incident.priority.summary : '~none~',
-                notes: 0,
+                // notes: 0,
                 created_at: moment(incident.created_at).format('l LTS [GMT]ZZ'),
                 service_name: `<a href="${incident.service.html_url}" target="blank">${incident.service.summary}</a>`,
                 last_log: '',
@@ -105,7 +105,7 @@ function pollLogEntries() {
             }
             row.last_log = `${(new Date(update_item.created_at)).toLocaleString()}: ${update_item.summary}`
             if (update_item.type === 'annotate_log_entry') {
-                row.notes += 1
+                // row.notes += 1
             } else if (update_item.type === 'priority_change_log_entry') {
                 row.priority = incident.priority ? incident.priority.summary : '~none~'
             } else if (update_item.type === 'acknowledge_log_entry') {
@@ -165,10 +165,13 @@ async function buildReport(since, until, reuseFetchedData) {
             buildReport(since, until, true);
         });
         incidents = await fetchIncidents(since, until)
-        for (incident of incidents) {
-            r = await pd.get(`/incidents/${incident.id}/notes`)
-            incident.notes = r.data.notes
-        }
+        // for (incident of incidents) {
+        //     // r = await pd.get(`/incidents/${incident.id}/notes`)
+        //     // incident.notes = r.data.notes
+
+        //     // NB: Overriding existing functionality of adding notes (e.g. reducing slowness)
+        //     incident.notes = []
+        // }
         clearInterval(poller)
         poller = setInterval(pollLogEntries, 5000)
         clearInterval(recent_log_entries_purge_timer)
@@ -200,7 +203,7 @@ async function buildReport(since, until, reuseFetchedData) {
                 title: incident.title,
                 status: incident.status,
                 priority: incident.priority.name,
-                notes: incident.notes.length,
+                // notes: incident.notes.length,
                 created_at: moment(incident.created_at).format('l LTS [GMT]ZZ'),
                 service_name: `<a href="${incident.service.html_url}" target="blank">${incident.service.summary}</a>`,
                 last_log: '',
@@ -212,7 +215,7 @@ async function buildReport(since, until, reuseFetchedData) {
         { title: "Title", data: 'title' },
         { title: "Status", data: 'status' },
         { title: "Priority", data: 'priority' },
-        { title: "Notes", data: 'notes' },
+        // { title: "Notes", data: 'notes' },
         { title: "Created at", data: 'created_at' },
         { title: "Service Name", data: 'service_name' },
         { title: "last log entry", data: 'last_log' },
