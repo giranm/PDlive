@@ -15,22 +15,22 @@ function getParameterByName(name) {
 }
 
 function secondsToHHMMSS(seconds) {
-	var hours = Math.floor(seconds / 60 / 60);
-	var minutes = Math.floor((seconds % 3600) / 60);
-	var seconds = seconds % 60;
+    var hours = Math.floor(seconds / 60 / 60);
+    var minutes = Math.floor((seconds % 3600) / 60);
+    var seconds = seconds % 60;
 
-	var HH = ('0' + hours).slice(-2);
-	var MM = ('0' + minutes).slice(-2);
-	var SS = ('0' + seconds).slice(-2);
+    var HH = ('0' + hours).slice(-2);
+    var MM = ('0' + minutes).slice(-2);
+    var SS = ('0' + seconds).slice(-2);
 
-	return `${HH}:${MM}:${SS}`;
+    return `${HH}:${MM}:${SS}`;
 }
 
 async function pdfetch(endpoint, params) {
-    myParams = {...params}
+    myParams = { ...params }
     const endpoint_identifier = endpoint.split('/').pop()
     let r = []
-    responses = await PagerDuty.all({token: token, tokenType: 'bearer', endpoint: `/${endpoint}`, data: myParams})
+    responses = await PagerDuty.all({ token: token, tokenType: 'bearer', endpoint: `/${endpoint}`, data: myParams })
     for (response of responses) {
         r = [...r, ...response.data[endpoint_identifier]]
     }
@@ -47,7 +47,7 @@ function pollLogEntries() {
         let remove_set = new Set()
         let update_set = new Set()
         for (log_entry of log_entries) {
-            if ( recent_log_entries.filter(x => x.id == log_entry.id).length > 0 ) {
+            if (recent_log_entries.filter(x => x.id == log_entry.id).length > 0) {
                 // console.log(`duplicate log entry ${log_entry.id}`)
                 continue
             }
@@ -62,7 +62,7 @@ function pollLogEntries() {
             incident_id = log_entry.incident.id
             entry_type = log_entry.type
 
-            if ( entry_type === 'resolve_log_entry') {
+            if (entry_type === 'resolve_log_entry') {
                 remove_set.add(log_entry)
             } else if (entry_type === 'trigger_log_entry') {
                 add_set.add(log_entry)
@@ -76,7 +76,7 @@ function pollLogEntries() {
         const update_list = [...update_set].filter(x => !remove_set.has(x) && !add_set.has(x))
         const remove_list = [...remove_set]
 
-        const pd = PagerDuty.api({token: token, tokenType: 'bearer'})
+        const pd = PagerDuty.api({ token: token, tokenType: 'bearer' })
         for (add_item of add_list) {
             console.log('add:', add_item)
             const incident = add_item.incident
@@ -91,7 +91,7 @@ function pollLogEntries() {
                 service_name: `<a href="${incident.service.html_url}" target="blank">${incident.service.summary}</a>`,
                 last_log: '',
             })
-            .draw()
+                .draw()
             flashIncidentRow(incident.id)
         }
 
@@ -138,20 +138,20 @@ function cleanRecentLogEntries() {
 }
 
 async function fetchIncidents(since, until) {
-	var params = {
-		since: since.toISOString(),
-		until: until.toISOString(),
+    var params = {
+        since: since.toISOString(),
+        until: until.toISOString(),
         'include[]': 'first_trigger_log_entries',
         'statuses[]': ['triggered', 'acknowledged']
-	}
-	return await pdfetch('incidents', params);
+    }
+    return await pdfetch('incidents', params);
 }
 
 async function buildReport(since, until, reuseFetchedData) {
     if (!reuseFetchedData) {
         $('.busy').show()
         last_polled = new Date()
-        const pd = PagerDuty.api({token: token, tokenType: 'bearer'})
+        const pd = PagerDuty.api({ token: token, tokenType: 'bearer' })
         let r = await pd.get('/priorities')
         priorities = r.data.priorities
         $('#priority-checkboxes-div').html('Show priorities: <div class="btn-group" id="priority-checkboxes-group"></div>')
@@ -159,7 +159,7 @@ async function buildReport(since, until, reuseFetchedData) {
             $('#priority-checkboxes-group').append($('<button/>', { class: "priority-button btn btn-primary active", value: priority.name, text: priority.name }))
         }
         $('#priority-checkboxes-group').append($('<button/>', { class: "priority-button btn btn-primary active", value: "~none~", text: "none" }))
-        $('.priority-button').click(function() {
+        $('.priority-button').click(function () {
             $(this).toggleClass('btn-primary');
             $(this).toggleClass('active');
             buildReport(since, until, true);
@@ -187,13 +187,13 @@ async function buildReport(since, until, reuseFetchedData) {
         class: "display"
     }))
 
-    const selected_priorities = $(':button.active').map(function() { return this.value; }).get()
+    const selected_priorities = $(':button.active').map(function () { return this.value; }).get()
     let tableData = []
     for (incident of incidents) {
-        if ( ! incident.priority ) {
+        if (!incident.priority) {
             incident.priority = { name: '~none~' }
         }
-        if ( selected_priorities.indexOf(incident.priority.name) > -1 ) {
+        if (selected_priorities.indexOf(incident.priority.name) > -1) {
             tableData.push({
                 incident_id: incident.id,
                 number: `<a href="${incident.html_url}" target="blank">${incident.incident_number}</a>`,
@@ -208,15 +208,15 @@ async function buildReport(since, until, reuseFetchedData) {
         }
     }
     const columnTitles = [
-            { title: "#", data: 'number' },
-            { title: "Title", data: 'title' },
-            { title: "Status", data: 'status' },
-            { title: "Priority", data: 'priority' },
-            { title: "Notes", data: 'notes' },
-            { title: "Created at", data: 'created_at'},
-            { title: "Service Name", data: 'service_name' },
-            { title: "last log entry", data: 'last_log'},
-        ]
+        { title: "#", data: 'number' },
+        { title: "Title", data: 'title' },
+        { title: "Status", data: 'status' },
+        { title: "Priority", data: 'priority' },
+        { title: "Notes", data: 'notes' },
+        { title: "Created at", data: 'created_at' },
+        { title: "Service Name", data: 'service_name' },
+        { title: "last log entry", data: 'last_log' },
+    ]
     table = $('#details-table').DataTable({
         data: tableData,
         columns: columnTitles,
@@ -275,37 +275,37 @@ function main() {
     PDOAuth.login(clientID)
     token = sessionStorage.getItem('pd_access_token')
 
-	$('#since').datepicker();
-	$('#until').datepicker();
+    $('#since').datepicker();
+    $('#until').datepicker();
 
-	if (getParameterByName('hideControls') == 'true') {
-		$('#controls').hide();
-	}
+    if (getParameterByName('hideControls') == 'true') {
+        $('#controls').hide();
+    }
 
-	var until = new Date();
-	var since = new Date();
-	since.setDate(since.getDate() - 7);
+    var until = new Date();
+    var since = new Date();
+    since.setDate(since.getDate() - 1);
 
-	since.setHours(0,0,0,0);
-	until.setHours(23,59,59,999);
+    since.setHours(0, 0, 0, 0);
+    until.setHours(23, 59, 59, 999);
 
-	$('#since').datepicker("setDate", since);
-	$('#until').datepicker("setDate", until);
+    $('#since').datepicker("setDate", since);
+    $('#until').datepicker("setDate", until);
 
-	buildReport(since, until)
+    buildReport(since, until)
 
-	$('#since').change(function() {
-		since = $('#since').datepicker("getDate");
-		since.setHours(0,0,0,0);
+    $('#since').change(function () {
+        since = $('#since').datepicker("getDate");
+        since.setHours(0, 0, 0, 0);
 
-		buildReport(since, until);
-	});
+        buildReport(since, until);
+    });
 
-	$('#until').change(function() {
-		until = $('#until').datepicker("getDate");
-		until.setHours(23,59,59,999);
+    $('#until').change(function () {
+        until = $('#until').datepicker("getDate");
+        until.setHours(23, 59, 59, 999);
 
-		buildReport(since, until);
+        buildReport(since, until);
     });
 
     /////////////////////////////
@@ -314,7 +314,7 @@ function main() {
     //
     $('#pd-logout-button').attr('href', '#')
     $('#pd-logout-button').click(() => {
-        PDOAuth.logout() 
+        PDOAuth.logout()
     })
 }
 
